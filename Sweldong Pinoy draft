@@ -9,7 +9,9 @@ DATA:
   vrm_list TYPE vrm_values,
   vrm_item LIKE LINE OF vrm_list.
 
+"Dropdown Declaration"
 AT SELECTION-SCREEN OUTPUT.
+  
    CLEAR vrm_list.
   vrm_id = 'emp_type'. "Employment Type"
   vrm_item-key = vrm_item-text = 'Private Employee'. APPEND vrm_item TO vrm_list.
@@ -19,9 +21,23 @@ AT SELECTION-SCREEN OUTPUT.
   
    CALL FUNCTION 'VRM_SET_VALUES' EXPORTING id = vrm_id values = vrm_list.
   
+   CLEAR vrm_list.
+  vrm_id = 'payr_prd'. "Payroll Period"
+  vrm_item-key = vrm_item-text = 'Daily'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Weekly'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Semi-Monthly'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Monthly'. APPEND vrm_item TO vrm_list.
+  
+   CALL FUNCTION 'VRM_SET_VALUES' EXPORTING id = vrm_id values = vrm_list.
+  
+  "Program Start dawg"
   START-OF-SELECTION.
   
   PARAMETERS:
-    emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY. " Employment Type "
+    emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Employment Type "
+    payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Payroll Period "
+    bsc_pay TYPE P LENGTH 10 DECIMALS 2 OBLIGATORY. " Basic Pay Input "
   
-  WRITE: emp_type.
+  WRITE:/0 emp_type,
+        / payr_prd,
+        / bsc_pay.
