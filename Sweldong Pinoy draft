@@ -33,11 +33,95 @@ AT SELECTION-SCREEN OUTPUT.
   "Program Start dawg"
   START-OF-SELECTION.
   
+  "Initial Inputs
+  
   PARAMETERS:
     emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Employment Type "
     payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Payroll Period "
-    bsc_pay TYPE P LENGTH 10 DECIMALS 2 OBLIGATORY. " Basic Pay Input "
+    bsc_pay TYPE P LENGTH 8 DECIMALS 2 OBLIGATORY. " Basic Pay Input "
   
-  WRITE:/0 emp_type,
-        / payr_prd,
-        / bsc_pay.
+  "Allowance Inputs
+  PARAMETERS:
+    tax_awc TYPE P LENGTH 8 DECIMALS 2, " Taxable Allowance "
+    ntax_awc TYPE P LENGTH 8 DECIMALS 2. " Non - Taxable Allowance "
+    
+  "Night Differential
+  PARAMETERS:
+    NIGHTD AS CHECKBOX USER-COMMAND ND. "Night Differential CB"
+    
+  "Overtime
+  PARAMETERS:
+    OVRTM AS CHECKBOX USER-COMMAND OT. "Overtime CB"
+   
+  "Semi monthly Monthly Annual.."
+  PARAMETERS:
+    mnthly RADIOBUTTON GROUP grp DEFAULT 'X', "Monthly
+    s_mnthly RADIOBUTTON GROUP grp, "Semi-Monthly
+    annual RADIOBUTTON GROUP grp.  
+   
+  "Multiplier"
+  DATA: mult TYPE I VALUE 1.
+   
+  "Computation variables"
+   "Night Differential
+  DATA: ndiffHour TYPE I VALUE 0, "Night Differential Value
+        ndiffRte TYPE I VALUE 0, "Night Differential Rate
+        ndiffPay TYPE I VALUE 0, "Night Differential Pay
+   "Number of Hours
+        OTHours TYPE I VALUE 0, "OT Number of Hours
+        OTRte TYPE I VALUE 0, "OT Rate
+        OTPay TYPE I VALUE 0, "OT Pay
+   "Others"
+        gPay TYPE P DECIMALS 2, "Gross Pay
+        whTax TYPE P DECIMALS 2, "Withholding Tax
+        SSSc TYPE P DECIMALS 2, "SSS Contribution
+        PHc TYPE P DECIMALS 2, "PhilHealth Contribution
+        PIc TYPE P DECIMALS 2, "PagIbig Contributions
+        totDeduc TYPE P DECIMALS 2, "Total Deductions
+        NPay TYPE P DECIMALS 2. "Net Pay"
+  
+  IF NIGHTD = 'X'.
+    WRITE: / 'ND: True'.
+  ELSE.
+    WRITE: / 'ND: False'.
+  ENDIF.
+  
+  IF OVRTM = 'X'.
+    WRITE: / 'OT: True'.
+  ELSE.
+    WRITE: / 'OT: False'.
+  ENDIF.
+  
+  IF mnthly = 'X'.
+    WRITE: / 'Monthly: True'.
+    mult = '1'.
+    bsc_pay = bsc_pay * mult.
+    
+    "Semi Monthly is selected
+  ELSEIF s_mnthly = 'X'.
+    WRITE: / 'Semi-Monthly: True'.
+    mult = '0.5'.
+    bsc_pay = bsc_pay * mult.
+  
+  ELSEIF annual = 'X'.
+    WRITE: / 'Annual: True'.
+    mult = '12'.
+    bsc_pay = bsc_pay * mult.
+  ENDIF.
+  
+  "Detrimental Computation" "HARMFUL COMPUTATION"
+  gPay = bsc_pay + tax_awc + ntax_awc + ndiffPay + OTPay.
+  
+  "Get Total of All"
+  WRITE: / 'Basic Pay: ', 90 bsc_pay.
+  WRITE: / 'Taxable Allowance: ', 90 tax_awc.
+  WRITE: / 'Non-Taxable Allowance: ', 90 ntax_awc.
+  WRITE: / 'Night Differential Pay: ', 90 ndiffPay.
+  WRITE: / 'Overtime Pay: ', 90 OTPay.
+  WRITE: / 'Gross Pay: ', 90 gPay.
+  WRITE: / 'Withholding Tax: ', 90 whTax.
+  WRITE: / 'SSS Contribution: ', 90 SSSc.
+  WRITE: / 'PhilHealth Contribution: ', 90 PHc.
+  WRITE: / 'PAG-IBIG Contribution: ', 90 PIc.
+  WRITE: / 'Total Deductions: ', 90 totDeduc.
+  WRITE: / 'Net Pay: ', 90 NPay.
