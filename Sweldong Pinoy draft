@@ -1,0 +1,27 @@
+TYPE-POOLS: vrm.
+
+TYPES:
+  FLOAT TYPE P DECIMALS 2.
+
+"Dropdowns"
+DATA:
+  vrm_id TYPE vrm_id,
+  vrm_list TYPE vrm_values,
+  vrm_item LIKE LINE OF vrm_list.
+
+AT SELECTION-SCREEN OUTPUT.
+   CLEAR vrm_list.
+  vrm_id = 'emp_type'. "Employment Type"
+  vrm_item-key = vrm_item-text = 'Private Employee'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Government Employee'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'RHQ/ROHQ Employee'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Minimum Wage Employee'. APPEND vrm_item TO vrm_list.
+  
+   CALL FUNCTION 'VRM_SET_VALUES' EXPORTING id = vrm_id values = vrm_list.
+  
+  START-OF-SELECTION.
+  
+  PARAMETERS:
+    emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY. " Employment Type "
+  
+  WRITE: emp_type.
