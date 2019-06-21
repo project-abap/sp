@@ -1,0 +1,179 @@
+*&---------------------------------------------------------------------*
+*& Report  YCOR194A
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT YCOR194A NO STANDARD PAGE HEADING.
+
+" Espiritu, Jefferson Rylee F.
+
+TYPE-POOLS: vrm.
+
+" commons
+TYPES: FLOAT TYPE P DECIMALS 2.
+
+"Dropdowns"
+DATA:
+  vrm_id TYPE vrm_id,
+  vrm_list TYPE vrm_values,
+  vrm_item LIKE LINE OF vrm_list.
+
+"Dropdown Declaration"
+AT SELECTION-SCREEN OUTPUT.
+
+  " employment type
+  CLEAR vrm_list.
+  vrm_id = 'emp_type'.
+  vrm_item-key = vrm_item-text = 'Private Employee'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Government Employee'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'RHQ/ROHQ Employee'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Minimum Wage Employee'. APPEND vrm_item TO vrm_list.
+
+  CALL FUNCTION 'VRM_SET_VALUES' EXPORTING id = vrm_id values = vrm_list.
+
+  " payroll period
+  CLEAR vrm_list.
+  vrm_id = 'payr_prd'.
+  vrm_item-key = vrm_item-text = 'Daily'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Weekly'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Semi-Monthly'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = vrm_item-text = 'Monthly'. APPEND vrm_item TO vrm_list.
+
+  CALL FUNCTION 'VRM_SET_VALUES' EXPORTING id = vrm_id values = vrm_list.
+
+
+
+"
+"! actual start of program duh
+"
+
+START-OF-SELECTION.
+
+SELECTION-SCREEN BEGIN OF BLOCK S_INPUT WITH FRAME TITLE S_INPUT.
+
+  PARAMETERS:
+    emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY,
+    payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY,
+    bsc_pay TYPE FLOAT OBLIGATORY.
+
+SELECTION-SCREEN END OF BLOCK S_INPUT.
+
+" basic allowance
+SELECTION-SCREEN BEGIN OF BLOCK S_ALLOW WITH FRAME TITLE S_ALLOW.
+
+  PARAMETERS:
+    tax_awc TYPE FLOAT, " taxable allowance
+    ntax_awc TYPE FLOAT. " non-taxable allowance
+
+SELECTION-SCREEN END OF BLOCK S_ALLOW.
+
+" night differential
+SELECTION-SCREEN BEGIN OF BLOCK N_DIFF WITH FRAME TITLE N_DIFF.
+
+  PARAMETERS:
+    NIGHTD AS CHECKBOX USER-COMMAND ND,
+    ndHour TYPE I,
+    ndiffRte TYPE FLOAT.
+
+SELECTION-SCREEN END OF BLOCK N_DIFF.
+
+"Overtime
+SELECTION-SCREEN BEGIN OF BLOCK O_TIME WITH FRAME TITLE O_TIME.
+
+  PARAMETERS:
+    OVRTM AS CHECKBOX USER-COMMAND OT, "Overtime CheckBox"
+    OTHours TYPE I, "OT Number of Hours
+    OTRte TYPE FLOAT. "OT Rate
+
+SELECTION-SCREEN END OF BLOCK O_TIME.
+
+" Income Rate"
+SELECTION-SCREEN BEGIN OF BLOCK INC_RATE WITH FRAME TITLE INC_RATE.
+
+  PARAMETERS:
+    mnthly RADIOBUTTON GROUP grp DEFAULT 'X', "Monthly
+    s_mnthly RADIOBUTTON GROUP grp, "Semi-Monthly
+    annual RADIOBUTTON GROUP grp.
+
+SELECTION-SCREEN END OF BLOCK INC_RATE.
+
+END-OF-SELECTION.
+
+" titles
+START-OF-SELECTION.
+
+INITIALIZATION.
+  S_INPUT = 'Input'.
+  S_ALLOW = 'Allowance'.
+  N_DIFF = 'Night Differential'.
+  O_TIME = 'Overtime'.
+  INC_RATE = 'Rates'.
+  
+"
+" declarations and computations 
+"
+
+
+DATA: mult TYPE I VALUE 1.
+
+" Night Differential
+DATA:
+  ndiffPay TYPE I VALUE 0, " Night Differential Pay
+  OTPay TYPE I VALUE 0, "OT Pay
+  " Others
+  gPay TYPE FLOAT, " Gross Pay
+  whTax TYPE FLOAT, " Withholding Tax
+  SSSc TYPE FLOAT, " SSS Contribution
+  PHc TYPE FLOAT, " PhilHealth Contribution
+  PIc TYPE FLOAT, " PagIbig Contributions
+  totDeduc TYPE FLOAT, " Total Deductions
+  NPay TYPE FLOAT. " Net Pay
+END-OF-SELECTION.
+
+IF NIGHTD = 'X'.
+  WRITE: / 'ND: True'.
+ELSE.
+  WRITE: / 'ND: False'.
+ENDIF.
+
+IF OVRTM = 'X'.
+  WRITE: / 'OT: True'.
+ELSE.
+  WRITE: / 'OT: False'.
+ENDIF.
+
+IF mnthly = 'X'.
+  WRITE: / 'Monthly: True'.
+  mult = '1'.
+  bsc_pay = bsc_pay * mult.
+
+  "Semi Monthly is selected
+ELSEIF s_mnthly = 'X'.
+  WRITE: / 'Semi-Monthly: True'.
+  mult = '0.5'.
+  bsc_pay = bsc_pay * mult.
+
+ELSEIF annual = 'X'.
+  WRITE: / 'Annual: True'.
+  mult = '12'.
+  bsc_pay = bsc_pay * mult.
+ENDIF.
+
+"Detrimental Computation" "HARMFUL COMPUTATION"
+gPay = bsc_pay + tax_awc + ntax_awc + ndiffPay + OTPay.
+
+"Get Total of All"
+WRITE: / 'Basic Pay: ', 90 bsc_pay.
+WRITE: / 'Taxable Allowance: ', 90 tax_awc.
+WRITE: / 'Non-Taxable Allowance: ', 90 ntax_awc.
+WRITE: / 'Night Differential Pay: ', 90 ndiffPay.
+WRITE: / 'Overtime Pay: ', 90 OTPay.
+WRITE: / 'Gross Pay: ', 90 gPay.
+WRITE: / 'Withholding Tax: ', 90 whTax.
+WRITE: / 'SSS Contribution: ', 90 SSSc.
+WRITE: / 'PhilHealth Contribution: ', 90 PHc.
+WRITE: / 'PAG-IBIG Contribution: ', 90 PIc.
+WRITE: / 'Total Deductions: ', 90 totDeduc.
+WRITE: / 'Net Pay: ', 90 NPay.
