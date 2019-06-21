@@ -11,65 +11,85 @@ DATA:
 
 "Dropdown Declaration"
 AT SELECTION-SCREEN OUTPUT.
-  
+
    CLEAR vrm_list.
   vrm_id = 'emp_type'. "Employment Type"
   vrm_item-key = vrm_item-text = 'Private Employee'. APPEND vrm_item TO vrm_list.
   vrm_item-key = vrm_item-text = 'Government Employee'. APPEND vrm_item TO vrm_list.
   vrm_item-key = vrm_item-text = 'RHQ/ROHQ Employee'. APPEND vrm_item TO vrm_list.
   vrm_item-key = vrm_item-text = 'Minimum Wage Employee'. APPEND vrm_item TO vrm_list.
-  
+
    CALL FUNCTION 'VRM_SET_VALUES' EXPORTING id = vrm_id values = vrm_list.
-  
+
    CLEAR vrm_list.
   vrm_id = 'payr_prd'. "Payroll Period"
   vrm_item-key = vrm_item-text = 'Daily'. APPEND vrm_item TO vrm_list.
   vrm_item-key = vrm_item-text = 'Weekly'. APPEND vrm_item TO vrm_list.
   vrm_item-key = vrm_item-text = 'Semi-Monthly'. APPEND vrm_item TO vrm_list.
   vrm_item-key = vrm_item-text = 'Monthly'. APPEND vrm_item TO vrm_list.
-  
+
    CALL FUNCTION 'VRM_SET_VALUES' EXPORTING id = vrm_id values = vrm_list.
-  
+
   "Program Start dawg"
   START-OF-SELECTION.
+
+  "Basic Inputs
+  SELECTION-SCREEN BEGIN OF BLOCK B_INPUT WITH FRAME TITLE B_INPUT.
+
+    PARAMETERS:
+      emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Employment Type "
+      payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Payroll Period "
+      bsc_pay TYPE P LENGTH 8 DECIMALS 2 OBLIGATORY. " Basic Pay Input "
   
-  "Initial Inputs
-  
-  PARAMETERS:
-    emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Employment Type "
-    payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Payroll Period "
-    bsc_pay TYPE P LENGTH 8 DECIMALS 2 OBLIGATORY. " Basic Pay Input "
-  
-  "Allowance Inputs
-  PARAMETERS:
-    tax_awc TYPE P LENGTH 8 DECIMALS 2, " Taxable Allowance "
-    ntax_awc TYPE P LENGTH 8 DECIMALS 2. " Non - Taxable Allowance "
-    
+  SELECTION-SCREEN END OF BLOCK B_INPUT.
+
+  "Basic Allowance Inputs
+  SELECTION-SCREEN BEGIN OF BLOCK B_ALLOW WITH FRAME TITLE B_ALLOW.
+    PARAMETERS:
+      tax_awc TYPE P LENGTH 8 DECIMALS 2, " Taxable Allowance "
+      ntax_awc TYPE P LENGTH 8 DECIMALS 2. " Non - Taxable Allowance "
+  SELECTION-SCREEN END OF BLOCK B_ALLOW.
+
   "Night Differential
-  PARAMETERS:
-    NIGHTD AS CHECKBOX USER-COMMAND ND. "Night Differential CB"
-    
+  SELECTION-SCREEN BEGIN OF BLOCK N_DIFF WITH FRAME TITLE N_DIFF.
+    PARAMETERS:
+      NIGHTD AS CHECKBOX USER-COMMAND ND, "Night Differential CB"
+      ndHour TYPE I, "Night Differential Value
+      ndiffRte TYPE P LENGTH 8 DECIMALS 2. "Night Differential Rate
+  SELECTION-SCREEN END OF BLOCK N_DIFF.
+  
   "Overtime
-  PARAMETERS:
-    OVRTM AS CHECKBOX USER-COMMAND OT. "Overtime CB"
-   
-  "Semi monthly Monthly Annual.."
-  PARAMETERS:
-    mnthly RADIOBUTTON GROUP grp DEFAULT 'X', "Monthly
-    s_mnthly RADIOBUTTON GROUP grp, "Semi-Monthly
-    annual RADIOBUTTON GROUP grp.  
-   
+  SELECTION-SCREEN BEGIN OF BLOCK O_TIME WITH FRAME TITLE O_TIME.
+    PARAMETERS:
+      OVRTM AS CHECKBOX USER-COMMAND OT, "Overtime CheckBox"
+      OTHours TYPE I, "OT Number of Hours
+      OTRte TYPE P LENGTH 8 DECIMALS 2. "OT Rate
+  SELECTION-SCREEN END OF BLOCK O_TIME.
+
+  "Inome Rate"
+  SELECTION-SCREEN BEGIN OF BLOCK INC_RATE WITH FRAME TITLE INC_RATE.
+    PARAMETERS:
+      mnthly RADIOBUTTON GROUP grp DEFAULT 'X', "Monthly
+      s_mnthly RADIOBUTTON GROUP grp, "Semi-Monthly
+      annual RADIOBUTTON GROUP grp.
+  SELECTION-SCREEN END OF BLOCK INC_RATE.
+
+  END-OF-SELECTION.
+  
+  "Blocks
+  START-OF-SELECTION.
+  
+  INITIALIZATION.
+    B_INPUT = 'Input'.
+    B_ALLOW = 'Allowance'.
+    N_DIFF = 'Night Differential'.
+    O_TIME = 'Overtime'.
+    INC_RATE = 'Rates'.
   "Multiplier"
   DATA: mult TYPE I VALUE 1.
-   
-  "Computation variables"
-   "Night Differential
-  DATA: ndiffHour TYPE I VALUE 0, "Night Differential Value
-        ndiffRte TYPE I VALUE 0, "Night Differential Rate
-        ndiffPay TYPE I VALUE 0, "Night Differential Pay
-   "Number of Hours
-        OTHours TYPE I VALUE 0, "OT Number of Hours
-        OTRte TYPE I VALUE 0, "OT Rate
+
+  "Night Differential
+  DATA: ndiffPay TYPE I VALUE 0, "Night Differential Pay
         OTPay TYPE I VALUE 0, "OT Pay
    "Others"
         gPay TYPE P DECIMALS 2, "Gross Pay
@@ -79,39 +99,40 @@ AT SELECTION-SCREEN OUTPUT.
         PIc TYPE P DECIMALS 2, "PagIbig Contributions
         totDeduc TYPE P DECIMALS 2, "Total Deductions
         NPay TYPE P DECIMALS 2. "Net Pay"
-  
+  END-OF-SELECTION.
+
   IF NIGHTD = 'X'.
     WRITE: / 'ND: True'.
   ELSE.
     WRITE: / 'ND: False'.
   ENDIF.
-  
+
   IF OVRTM = 'X'.
     WRITE: / 'OT: True'.
   ELSE.
     WRITE: / 'OT: False'.
   ENDIF.
-  
+
   IF mnthly = 'X'.
     WRITE: / 'Monthly: True'.
     mult = '1'.
     bsc_pay = bsc_pay * mult.
-    
+
     "Semi Monthly is selected
   ELSEIF s_mnthly = 'X'.
     WRITE: / 'Semi-Monthly: True'.
     mult = '0.5'.
     bsc_pay = bsc_pay * mult.
-  
+
   ELSEIF annual = 'X'.
     WRITE: / 'Annual: True'.
     mult = '12'.
     bsc_pay = bsc_pay * mult.
   ENDIF.
-  
+
   "Detrimental Computation" "HARMFUL COMPUTATION"
   gPay = bsc_pay + tax_awc + ntax_awc + ndiffPay + OTPay.
-  
+
   "Get Total of All"
   WRITE: / 'Basic Pay: ', 90 bsc_pay.
   WRITE: / 'Taxable Allowance: ', 90 tax_awc.
