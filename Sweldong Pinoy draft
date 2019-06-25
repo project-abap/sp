@@ -193,23 +193,27 @@ AT SELECTION-SCREEN OUTPUT.
 
   "SSS Contribution ==============================================================================
   DATA: SSSc TYPE P DECIMALS 2.
-
-  IF m_basPay < 2250. "Monthly base pay less than 2250
-    SSSc = 20.
-  ELSEIF m_basPay >= 19750. "Monthly base pay greater than 19750
-    SSSc = 800.
+  
+  IF emp_type = '2'.
+    SSSc = 0.
   ELSE.
-    SSSc = ROUND( val = ( m_basPay / 500 ) dec = 0 ) * 20.
-  ENDIF.
+    IF m_basPay < 2250. "Monthly base pay less than 2250
+      SSSc = 20.
+    ELSEIF m_basPay >= 19750. "Monthly base pay greater than 19750
+      SSSc = 800.
+    ELSE.
+      SSSc = ROUND( val = ( m_basPay / 500 ) dec = 0 ) * 20.
+    ENDIF.
 
-  IF mnthly = 'X'.
-    SSSc = SSSc * 1.
+    IF mnthly = 'X'.
+      SSSc = SSSc * 1.
 
-  ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    SSSc = SSSc * '0.5'.
+    ELSEIF s_mnthly = 'X'. "Semi Monthly"
+      SSSc = SSSc * '0.5'.
 
-  ELSEIF annual = 'X'. "Annual
-    SSSc = SSSc * 12.
+    ELSEIF annual = 'X'. "Annual
+      SSSc = SSSc * 12.
+    ENDIF.
   ENDIF.
   "===============================================================================================
 
