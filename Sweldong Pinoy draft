@@ -151,7 +151,7 @@ AT SELECTION-SCREEN OUTPUT.
   "Night Differential Computation =============================================================================="
   DATA: ndiffPay TYPE P DECIMALS 2. "Night Differential Pay
   IF NIGHTD = 'X'.
-
+     "243.33 Number of hours per month
     ndiffPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( ndiffRte / 100 ) * ndHour.
 
     IF mnthly = 'X'.
@@ -193,7 +193,7 @@ AT SELECTION-SCREEN OUTPUT.
 
   "SSS Contribution ==============================================================================
   DATA: SSSc TYPE P DECIMALS 2.
-  
+
   IF emp_type = '2'.
     SSSc = 0.
   ELSE.
