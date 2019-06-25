@@ -119,6 +119,17 @@ END-OF-SELECTION.
 " declarations and computations
 "
 
+DATA: irRate TYPE FLOAT.
+
+IF mnthly = 'X'. " monthly
+  irRate = 1.
+ELSEIF s_mnthly = 'X'. " semi-monthly
+  irRate = '0.5'.
+ELSEIF annual = 'X'. " annual
+  irRate = 12.
+ENDIF.
+
+
 DATA: PayMult TYPE FLOAT. "Pay multiplier"
 
 "Payroll Period"
@@ -138,15 +149,9 @@ DATA:
 n_basPay = bsc_pay * payMult. "New Base Pay
 m_basPay = n_basPay. "Monthly Base Pay
 
-IF mnthly = 'X'.
-  n_basPay = n_basPay * 1.
+" irRate mult
+n_basPay = n_basPay * irRate.
 
-ELSEIF s_mnthly = 'X'. "Semi Monthly"
-  n_basPay = n_basPay * '0.5'.
-
-ELSEIF annual = 'X'. "Annual
-  n_basPay = n_basPay * 12.
-ENDIF.
 "===============================================================================================
 
 "Allowance Computation =============================================================================="
@@ -157,18 +162,10 @@ DATA:
 taxable = ( tax_awc * PayMult ). "Taxable computation
 n_taxable = ( ntax_awc * PayMult ). "Non-Taxable computation
 
-IF mnthly = 'X'.
-  taxable = taxable * 1.
-  n_taxable = n_taxable * 1.
+" irRate mult
+taxable = taxable * irRate.
+n_taxable = n_taxable * irRate.
 
-ELSEIF s_mnthly = 'X'. "Semi Monthly"
-  taxable = taxable * '0.5'.
-  n_taxable = n_taxable * '0.5'.
-
-ELSEIF annual = 'X'. "Annual
-  taxable = taxable * 12.
-  n_taxable = n_taxable * 12.
-ENDIF.
 "===============================================================================================
 
 
@@ -179,15 +176,8 @@ DATA: ndiffPay TYPE FLOAT VALUE 0. "Night Differential Pay
 IF NIGHTD = 'X'.
   ndiffPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( ndiffRte / 100 ) * ndHour.
 
-  IF mnthly = 'X'.
-    ndiffPay = ndiffPay * 1.
-
-  ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    ndiffPay = ndiffPay * '0.5'.
-
-  ELSEIF annual = 'X'. "Annual
-    ndiffPay = ndiffPay * 12.
-  ENDIF.
+  " irRate mult
+  ndiffPay = ndiffPay * irRate.
 
 ENDIF.
 "===============================================================================================
@@ -198,15 +188,8 @@ DATA: OTPay TYPE FLOAT VALUE 0. "OT Pay
 IF OVRTM = 'X'.
   OTPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( OTRte / 100 ) * OTHours.
 
-  IF mnthly = 'X'.
-    OTHours = OTHours * 1.
-
-  ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    OTHours = OTHours * '0.5'.
-
-  ELSEIF annual = 'X'. "Annual
-    OTHours = OTHours * 12.
-  ENDIF.
+  " irRate mult
+  OTHours = OTHours * irRate.
 
 ENDIF.
 "===============================================================================================
@@ -224,15 +207,10 @@ ELSE.
   SSSc = ROUND( val = ( m_basPay / 500 ) dec = 0 ) * 20.
 ENDIF.
 
-IF mnthly = 'X'.
-  SSSc = SSSc * 1.
 
-ELSEIF s_mnthly = 'X'. "Semi Monthly"
-  SSSc = SSSc * '0.5'.
+" irRate mult
+SSSc = SSSc * irRate.
 
-ELSEIF annual = 'X'. "Annual
-  SSSc = SSSc * 12.
-ENDIF.
 "===============================================================================================
 
 "GSIS Contribution ==============================================================================
@@ -251,15 +229,10 @@ ELSE.
   PHc = ( m_basPay * '0.0275' ) / 2.
 ENDIF.
 
-IF mnthly = 'X'.
-  PHc = PHc * 1.
 
-ELSEIF s_mnthly = 'X'. "Semi Monthly"
-  PHc = PHc * '0.5'.
+" irRate mult
+PHc = PHc * irRate.
 
-ELSEIF annual = 'X'. "Annual
-  PHc = PHc * 12.
-ENDIF.
 "===============================================================================================
 
 " Pag Ibig Contributions ==============================================================================
@@ -272,15 +245,10 @@ ELSEIF bsc_pay >= 1500.
   PIc = m_basPay * '0.02'.
 ENDIF.
 
-IF mnthly = 'X'.
-  PIc = PIc * 1.
 
-ELSEIF s_mnthly = 'X'. "Semi Monthly"
-  PIc = PIc * '0.5'.
+" irRate mult
+PIc = PIc * irRate.
 
-ELSEIF annual = 'X'. "Annual
-  PIc = PIc * 12.
-ENDIF.
 "===============================================================================================
 
 "Witholding tax ==============================================================================
@@ -308,15 +276,9 @@ ELSE.
 ENDIF.
 
 
-IF mnthly = 'X'.
-  whTax = whTax * 1.
+" irRate mult
+whTax = whTax * irRate.
 
-ELSEIF s_mnthly = 'X'. "Semi Monthly"
-  whTax = whTax * '0.5'.
-
-ELSEIF annual = 'X'. "Annual
-  whTax = whTax * 12.
-ENDIF.
 "===============================================================================================
 
 "Total Deductions ==============================================================================
