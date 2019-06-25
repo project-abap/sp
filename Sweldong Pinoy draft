@@ -86,24 +86,12 @@ AT SELECTION-SCREEN OUTPUT.
     N_DIFF = 'Night Differential'.
     O_TIME = 'Overtime'.
     INC_RATE = 'Rates'.
-    
-  "Multiplier"
-  DATA: mult TYPE I VALUE 1.
 
-  "Night Differential
   DATA: ndiffPay TYPE I VALUE 0, "Night Differential Pay
-        OTPay TYPE I VALUE 0, "OT Pay
-   "Other Data Declarations"
-        gPay TYPE P DECIMALS 2, "Gross Pay
-        whTax TYPE P DECIMALS 2, "Withholding Tax
-        SSSc TYPE P DECIMALS 2, "SSS Contribution
-        PHc TYPE P DECIMALS 2, "PhilHealth Contribution
-        PIc TYPE P DECIMALS 2, "PagIbig Contributions
-        totDeduc TYPE P DECIMALS 2, "Total Deductions
-        NPay TYPE P DECIMALS 2. "Net Pay"
+        OTPay TYPE I VALUE 0. "OT Pay
   END-OF-SELECTION.
 
-  "Pay Multiplier"
+  "Pay Multiplier =============================================================================="
   DATA: PayMult TYPE p DECIMALS 2. "Pay multiplier"
 
   "Payroll Period"
@@ -119,10 +107,10 @@ AT SELECTION-SCREEN OUTPUT.
   ELSEIF payr_prd = '4'. "Monthly"
     PayMult = '1'. "number of days
   ENDIF.
-  "Payroll Period End"
+  "===============================================================================================
 
 
-  "Monthly Payments"
+  "Monthly Payment =============================================================================="
   DATA: n_basPay TYPE p DECIMALS 2, "New Base Pay
         m_basPay TYPE p DECIMALS 2. "Monthly Base Pay
 
@@ -130,20 +118,17 @@ AT SELECTION-SCREEN OUTPUT.
   m_basPay = n_basPay. "Monthly Base Pay
 
   IF mnthly = 'X'.
-    mult = '1'.
-    n_basPay = ( n_basPay * mult ) .
+    n_basPay = n_basPay * 1.
 
   ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    mult = '0.5'.
-    n_basPay = n_basPay * mult.
+    n_basPay = n_basPay * '0.5'.
 
   ELSEIF annual = 'X'. "Annual
-    mult = '12'.
-    n_basPay = n_basPay * mult.
+    n_basPay = n_basPay * 12.
   ENDIF.
-  "Monthly Payments End"
+  "===============================================================================================
 
-  "Allowance Computations"
+  "Allowance Computation =============================================================================="
   DATA: taxable TYPE p DECIMALS 2,
        n_taxable TYPE p DECIMALS 2.
 
@@ -151,23 +136,22 @@ AT SELECTION-SCREEN OUTPUT.
   n_taxable = ( ntax_awc * PayMult ). "Non-Taxable computation
 
   IF mnthly = 'X'.
-    mult = '1'.
-    taxable = taxable * mult.
-    n_taxable = n_taxable * mult.
+    taxable = taxable * 1.
+    n_taxable = n_taxable * 1.
 
   ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    mult = '0.5'.
-    taxable = taxable * mult.
-    n_taxable = n_taxable * mult.
+    taxable = taxable * '0.5'.
+    n_taxable = n_taxable * '0.5'.
 
   ELSEIF annual = 'X'. "Annual
-    mult = '12'.
-    taxable = taxable * mult.
-    n_taxable = n_taxable * mult.
+    taxable = taxable * 12.
+    n_taxable = n_taxable * 12.
   ENDIF.
-  "Allowance Computations End"
+  "===============================================================================================
 
-  "SSS Contribution
+  "SSS Contribution ==============================================================================
+  DATA: SSSc TYPE P DECIMALS 2.
+  
   IF m_basPay < 2250. "Monthly base pay less than 2250
     SSSc = 20.
   ELSEIF m_basPay >= 19750. "Monthly base pay greater than 19750
@@ -177,20 +161,19 @@ AT SELECTION-SCREEN OUTPUT.
   ENDIF.
 
   IF mnthly = 'X'.
-    mult = '1'.
-    SSSc = SSSc * mult.
+    SSSc = SSSc * 1.
 
   ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    mult = '0.5'.
-    SSSc = SSSc * mult.
+    SSSc = SSSc * '0.5'.
 
   ELSEIF annual = 'X'. "Annual
-    mult = '12'.
     SSSc = SSSc * 12.
   ENDIF.
-  "SSS Contribution End
+  "===============================================================================================
 
-  "PhilHealth Contrib
+  "PhilHealth Contributions ==============================================================================
+  DATA: PHc TYPE P DECIMALS 2.
+  
   IF m_basPay <= 10000. "Monthly base pay less than equal to 10000
     PHc = '137.50'.
   ELSEIF m_basPay >= 40000. "Monthly base pay greater than equal to 40000
@@ -200,20 +183,18 @@ AT SELECTION-SCREEN OUTPUT.
   ENDIF.
 
   IF mnthly = 'X'.
-    mult = '1'.
-    PHc = PHc * mult.
+    PHc = PHc * 1.
 
   ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    mult = '0.5'.
-    PHc = PHc * mult.
+    PHc = PHc * '0.5'.
 
   ELSEIF annual = 'X'. "Annual
-    mult = '12'.
-    PHc = PHc * mult.
+    PHc = PHc * 12.
   ENDIF.
-  "PhilHealth Contrib End
+  "===============================================================================================
 
-  "Pag Ibig Contrib
+  " Pag Ibig Contributions ==============================================================================
+  DATA: PIc TYPE P DECIMALS 2.
   IF m_basPay >= 5000. "Monthly base pay greater than equal to 5000
     PIc = 100.
   ELSEIF m_basPay < 1500. "Monthly base pay less than 1500
@@ -223,21 +204,19 @@ AT SELECTION-SCREEN OUTPUT.
   ENDIF.
 
   IF mnthly = 'X'.
-    mult = '1'.
-    PIc = PIc * mult.
+    PIc = PIc * 1.
 
   ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    mult = '0.5'.
-    PIc = PIc * mult.
+    PIc = PIc * '0.5'.
 
   ELSEIF annual = 'X'. "Annual
-    mult = '12'.
-    PIc = PIc * mult.
+    PIc = PIc * 12.
   ENDIF.
-  "Pag Ibig Contrib End
+  "===============================================================================================
 
-  "Witholding tax
-  DATA: whTaxTotal TYPE p DECIMALS 2.
+  "Witholding tax ==============================================================================
+  DATA:whTax TYPE P DECIMALS 2,
+       whTaxTotal TYPE p DECIMALS 2.
 
   IF emp_type = 4. "Min Wage"
     whTax = 0.
@@ -258,29 +237,32 @@ AT SELECTION-SCREEN OUTPUT.
     ENDIF.
   ENDIF.
   IF mnthly = 'X'.
-    mult = '1'.
-    whTax = whTax * mult.
+    whTax = whTax * 1.
 
   ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    mult = '0.5'.
-    whTax = whTax * mult.
+    whTax = whTax * '0.5'.
 
   ELSEIF annual = 'X'. "Annual
-    mult = '12'.
-    whTax = whTax * mult.
+    whTax = whTax * 12.
   ENDIF.
+  "===============================================================================================
 
-  "Witholding tax End
-
-  "Total Deductions"
+  "Total Deductions ==============================================================================
+  DATA: totDeduc TYPE P DECIMALS 2.
   totDeduc = whTax + SSSc + PHc + PIc.
-  "Total Deductions End"
-
-  "Detrimental Computation" "HARMFUL COMPUTATION"
+  "===============================================================================================
+  
+  "Gross Pay ==============================================================================
+  DATA: gPay TYPE P DECIMALS 2.
   gPay = bsc_pay + tax_awc + ntax_awc + ndiffPay + OTPay.
+  "===============================================================================================
+  
+  "Net Pay ==============================================================================
+  DATA: NPay TYPE P DECIMALS 2.
   NPay = gPay - totDeduc.
-
-  "Get Total of All"
+  "===============================================================================================
+  
+  "Display All =============================================================================="
   WRITE: / 'Basic Pay: ', 90 bsc_pay.
   WRITE: / 'Taxable Allowance: ', 90 tax_awc.
   WRITE: / 'Non-Taxable Allowance: ', 90 ntax_awc.
@@ -293,3 +275,4 @@ AT SELECTION-SCREEN OUTPUT.
   WRITE: / 'PAG-IBIG Contribution: ', 90 PIc.
   WRITE: / 'Total Deductions: ', 90 totDeduc.
   WRITE: / 'Net Pay: ', 90 NPay.
+  "===============================================================================================
