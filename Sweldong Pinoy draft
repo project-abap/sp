@@ -276,3 +276,14 @@ AT SELECTION-SCREEN OUTPUT.
   WRITE: / 'Total Deductions: ', 90 totDeduc.
   WRITE: / 'Net Pay: ', 90 NPay.
   "===============================================================================================
+  
+  
+**********************************
+** NIGHT DIFFERENTIAL ALLOWANCE **
+**********************************
+" Hourly Rate x 0.10 x Number of Hours
+
+******************
+** OVERTIME PAY **
+******************
+" ( Basic Pay / Working Hours ) x Number of Hours
