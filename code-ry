@@ -129,12 +129,11 @@ CASE payr_prd.
   WHEN '4'. PayMult = '1'. " monthly
 ENDCASE.
 
-"===============================================================================================
-
 
 "Monthly Payment =============================================================================="
-DATA: n_basPay TYPE FLOAT, "New Base Pay
-      m_basPay TYPE FLOAT. "Monthly Base Pay
+DATA:
+  n_basPay TYPE FLOAT, "New Base Pay
+  m_basPay TYPE FLOAT. "Monthly Base Pay
 
 n_basPay = bsc_pay * payMult. "New Base Pay
 m_basPay = n_basPay. "Monthly Base Pay
@@ -151,8 +150,9 @@ ENDIF.
 "===============================================================================================
 
 "Allowance Computation =============================================================================="
-DATA: taxable TYPE FLOAT,
-     n_taxable TYPE FLOAT.
+DATA:
+  taxable TYPE FLOAT,
+  n_taxable TYPE FLOAT.
 
 taxable = ( tax_awc * PayMult ). "Taxable computation
 n_taxable = ( ntax_awc * PayMult ). "Non-Taxable computation
@@ -174,44 +174,40 @@ ENDIF.
 
 
 "Night Differential Computation =============================================================================="
-DATA: ndiffPay TYPE P DECIMALS 2. "Night Differential Pay
+DATA: ndiffPay TYPE FLOAT VALUE 0. "Night Differential Pay
+
 IF NIGHTD = 'X'.
+  ndiffPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( ndiffRte / 100 ) * ndHour.
 
-ndiffPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( ndiffRte / 100 ) * ndHour.
+  IF mnthly = 'X'.
+    ndiffPay = ndiffPay * 1.
 
-IF mnthly = 'X'.
-  ndiffPay = ndiffPay * 1.
+  ELSEIF s_mnthly = 'X'. "Semi Monthly"
+    ndiffPay = ndiffPay * '0.5'.
 
-ELSEIF s_mnthly = 'X'. "Semi Monthly"
-  ndiffPay = ndiffPay * '0.5'.
+  ELSEIF annual = 'X'. "Annual
+    ndiffPay = ndiffPay * 12.
+  ENDIF.
 
-ELSEIF annual = 'X'. "Annual
-  ndiffPay = ndiffPay * 12.
-ENDIF.
-
-ELSE.
-ndiffPay = 0.
 ENDIF.
 "===============================================================================================
 
 "Overtime Computation =============================================================================="
-DATA: OTPay TYPE P DECIMALS 2. "OT Pay
+DATA: OTPay TYPE FLOAT VALUE 0. "OT Pay
 
 IF OVRTM = 'X'.
-OTPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( OTRte / 100 ) * OTHours.
+  OTPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( OTRte / 100 ) * OTHours.
 
-IF mnthly = 'X'.
-  OTHours = OTHours * 1.
+  IF mnthly = 'X'.
+    OTHours = OTHours * 1.
 
-ELSEIF s_mnthly = 'X'. "Semi Monthly"
-  OTHours = OTHours * '0.5'.
+  ELSEIF s_mnthly = 'X'. "Semi Monthly"
+    OTHours = OTHours * '0.5'.
 
-ELSEIF annual = 'X'. "Annual
-  OTHours = OTHours * 12.
-ENDIF.
+  ELSEIF annual = 'X'. "Annual
+    OTHours = OTHours * 12.
+  ENDIF.
 
-ELSE.
-OTPay = 0.
 ENDIF.
 "===============================================================================================
 
@@ -240,7 +236,7 @@ ENDIF.
 "===============================================================================================
 
 "GSIS Contribution ==============================================================================
-DATA: GSIS TYPE P DECIMALS 2.
+DATA: GSIS TYPE FLOAT.
 GSIS = bsc_pay * '0.09'.
 "===============================================================================================
 
@@ -288,8 +284,9 @@ ENDIF.
 "===============================================================================================
 
 "Witholding tax ==============================================================================
-DATA:whTax TYPE FLOAT,
-     whTaxTotal TYPE FLOAT.
+DATA:
+  whTax TYPE FLOAT,
+  whTaxTotal TYPE FLOAT.
 
 IF emp_type = 4. "Min Wage"
   whTax = 0.
@@ -309,6 +306,8 @@ ELSE.
     whTax = ( ( whTaxTotal - 666667 ) * '.35' ) + '200833.33'.
   ENDIF.
 ENDIF.
+
+
 IF mnthly = 'X'.
   whTax = whTax * 1.
 
@@ -336,7 +335,12 @@ NPay = gPay - totDeduc.
 "===============================================================================================
 
 "Display All =============================================================================="
-WRITE: / 'Basic Pay: ', 90 bsc_pay.
+WRITE: / 'Results'.
+ULINE.
+
+SKIP 1.
+
+WRITE: 'Basic Pay: ', 90 bsc_pay.
 WRITE: / 'Taxable Allowance: ', 90 tax_awc.
 WRITE: / 'Non-Taxable Allowance: ', 90 ntax_awc.
 WRITE: / 'Night Differential Pay: ', 90 ndiffPay.
@@ -344,9 +348,9 @@ WRITE: / 'Overtime Pay: ', 90 OTPay.
 WRITE: / 'Gross Pay: ', 90 gPay.
 WRITE: / 'Withholding Tax: ', 90 whTax.
 IF emp_type = '2'.
-WRITE: / 'GSIS Contribution: ', 90 SSSc.
+  WRITE: / 'GSIS Contribution: ', 90 SSSc.
 ELSE.
-WRITE: / 'SSS Contribution: ', 90 SSSc.
+  WRITE: / 'SSS Contribution: ', 90 SSSc.
 ENDIF.
 WRITE: / 'PhilHealth Contribution: ', 90 PHc.
 WRITE: / 'PAG-IBIG Contribution: ', 90 PIc.
