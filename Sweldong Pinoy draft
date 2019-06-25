@@ -67,7 +67,7 @@ AT SELECTION-SCREEN OUTPUT.
       OTRte TYPE P LENGTH 8 DECIMALS 2. "OT Rate
   SELECTION-SCREEN END OF BLOCK O_TIME.
 
-  "Inome Rate"
+  "Income Rate"
   SELECTION-SCREEN BEGIN OF BLOCK INC_RATE WITH FRAME TITLE INC_RATE.
     PARAMETERS:
       mnthly RADIOBUTTON GROUP grp DEFAULT 'X', "Monthly
@@ -87,8 +87,6 @@ AT SELECTION-SCREEN OUTPUT.
     O_TIME = 'Overtime'.
     INC_RATE = 'Rates'.
 
-  DATA: ndiffPay TYPE I VALUE 0, "Night Differential Pay
-        OTPay TYPE I VALUE 0. "OT Pay
   END-OF-SELECTION.
 
   "Pay Multiplier =============================================================================="
@@ -149,9 +147,53 @@ AT SELECTION-SCREEN OUTPUT.
   ENDIF.
   "===============================================================================================
 
+
+  "Night Differential Computation =============================================================================="
+  DATA: ndiffPay TYPE P DECIMALS 2. "Night Differential Pay
+  IF NIGHTD = 'X'.
+
+    ndiffPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( ndiffRte / 100 ) * ndHour.
+
+    IF mnthly = 'X'.
+      ndiffPay = ndiffPay * 1.
+
+    ELSEIF s_mnthly = 'X'. "Semi Monthly"
+      ndiffPay = ndiffPay * '0.5'.
+
+    ELSEIF annual = 'X'. "Annual
+      ndiffPay = ndiffPay * 12.
+    ENDIF.
+
+  ELSE.
+    ndiffPay = 0.
+  ENDIF.
+  "===============================================================================================
+
+  "Overtime Computation =============================================================================="
+  DATA: OTPay TYPE P DECIMALS 2. "OT Pay
+
+  IF OVRTM = 'X'.
+    OTPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( OTRte / 100 ) * OTHours.
+
+    IF mnthly = 'X'.
+      OTHours = OTHours * 1.
+
+    ELSEIF s_mnthly = 'X'. "Semi Monthly"
+      OTHours = OTHours * '0.5'.
+
+    ELSEIF annual = 'X'. "Annual
+      OTHours = OTHours * 12.
+    ENDIF.
+
+  ELSE.
+    OTPay = 0.
+  ENDIF.
+  "===============================================================================================
+
+
   "SSS Contribution ==============================================================================
   DATA: SSSc TYPE P DECIMALS 2.
-  
+
   IF m_basPay < 2250. "Monthly base pay less than 2250
     SSSc = 20.
   ELSEIF m_basPay >= 19750. "Monthly base pay greater than 19750
@@ -171,9 +213,14 @@ AT SELECTION-SCREEN OUTPUT.
   ENDIF.
   "===============================================================================================
 
+  "GSIS Contribution ==============================================================================
+  DATA: GSIS TYPE P DECIMALS 2.
+  GSIS = bsc_pay * '0.09'.
+  "===============================================================================================
+
   "PhilHealth Contributions ==============================================================================
   DATA: PHc TYPE P DECIMALS 2.
-  
+
   IF m_basPay <= 10000. "Monthly base pay less than equal to 10000
     PHc = '137.50'.
   ELSEIF m_basPay >= 40000. "Monthly base pay greater than equal to 40000
@@ -251,17 +298,17 @@ AT SELECTION-SCREEN OUTPUT.
   DATA: totDeduc TYPE P DECIMALS 2.
   totDeduc = whTax + SSSc + PHc + PIc.
   "===============================================================================================
-  
+
   "Gross Pay ==============================================================================
   DATA: gPay TYPE P DECIMALS 2.
   gPay = bsc_pay + tax_awc + ntax_awc + ndiffPay + OTPay.
   "===============================================================================================
-  
+
   "Net Pay ==============================================================================
   DATA: NPay TYPE P DECIMALS 2.
   NPay = gPay - totDeduc.
   "===============================================================================================
-  
+
   "Display All =============================================================================="
   WRITE: / 'Basic Pay: ', 90 bsc_pay.
   WRITE: / 'Taxable Allowance: ', 90 tax_awc.
@@ -270,20 +317,13 @@ AT SELECTION-SCREEN OUTPUT.
   WRITE: / 'Overtime Pay: ', 90 OTPay.
   WRITE: / 'Gross Pay: ', 90 gPay.
   WRITE: / 'Withholding Tax: ', 90 whTax.
-  WRITE: / 'SSS Contribution: ', 90 SSSc.
+  IF emp_type = '2'.
+    WRITE: / 'GSIS Contribution: ', 90 SSSc.
+  ELSE.
+    WRITE: / 'SSS Contribution: ', 90 SSSc.
+  ENDIF.
   WRITE: / 'PhilHealth Contribution: ', 90 PHc.
   WRITE: / 'PAG-IBIG Contribution: ', 90 PIc.
   WRITE: / 'Total Deductions: ', 90 totDeduc.
   WRITE: / 'Net Pay: ', 90 NPay.
   "===============================================================================================
-  
-  
-**********************************
-** NIGHT DIFFERENTIAL ALLOWANCE **
-**********************************
-" Hourly Rate x 0.10 x Number of Hours
-
-******************
-** OVERTIME PAY **
-******************
-" ( Basic Pay / Working Hours ) x Number of Hours
