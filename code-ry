@@ -54,10 +54,10 @@ START-OF-SELECTION.
 SELECTION-SCREEN BEGIN OF BLOCK S_INPUT WITH FRAME TITLE S_INPUT.
 
   PARAMETERS:
-    emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY,
-    payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY,
-    no_days TYPE FLOAT, " Number of Days "
-    bsc_pay TYPE FLOAT OBLIGATORY.
+    emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " employment type
+    payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " payroll period
+    no_days TYPE FLOAT, " number of days
+    bsc_pay TYPE FLOAT. " basic pay
 
 SELECTION-SCREEN END OF BLOCK S_INPUT.
 
@@ -80,23 +80,23 @@ SELECTION-SCREEN BEGIN OF BLOCK N_DIFF WITH FRAME TITLE N_DIFF.
 
 SELECTION-SCREEN END OF BLOCK N_DIFF.
 
-"Overtime
+" overtime
 SELECTION-SCREEN BEGIN OF BLOCK O_TIME WITH FRAME TITLE O_TIME.
 
   PARAMETERS:
-    OVRTM AS CHECKBOX USER-COMMAND OT, "Overtime CheckBox"
-    OTHours TYPE I, "OT Number of Hours
-    OTRte TYPE FLOAT. "OT Rate
+    OVRTM AS CHECKBOX USER-COMMAND OT, " OT checkbox
+    OTHours TYPE I, " OT number of hours
+    OTRte TYPE FLOAT. " OT rate
 
 SELECTION-SCREEN END OF BLOCK O_TIME.
 
-" Income Rate"
+" income rate
 SELECTION-SCREEN BEGIN OF BLOCK INC_RATE WITH FRAME TITLE INC_RATE.
 
   PARAMETERS:
-    mnthly RADIOBUTTON GROUP grp DEFAULT 'X', "Monthly
-    s_mnthly RADIOBUTTON GROUP grp, "Semi-Monthly
-    annual RADIOBUTTON GROUP grp.
+    mnthly RADIOBUTTON GROUP grp DEFAULT 'X', " monthly
+    s_mnthly RADIOBUTTON GROUP grp, " semi-monthly
+    annual RADIOBUTTON GROUP grp. " annual
 
 SELECTION-SCREEN END OF BLOCK INC_RATE.
 
@@ -130,9 +130,12 @@ ELSEIF annual = 'X'. " annual
 ENDIF.
 
 
-DATA: PayMult TYPE FLOAT. "Pay multiplier"
+"
+" payroll period
+"
 
-"Payroll Period"
+DATA: PayMult TYPE FLOAT. " pay multiplier
+
 CASE payr_prd.
   WHEN '1'. PayMult = no_days. " daily
   WHEN '2'. PayMult = '4'. " weekly
@@ -141,10 +144,13 @@ CASE payr_prd.
 ENDCASE.
 
 
-"Monthly Payment =============================================================================="
+"
+" monthly payment
+"
+
 DATA:
-  n_basPay TYPE FLOAT, "New Base Pay
-  m_basPay TYPE FLOAT. "Monthly Base Pay
+  n_basPay TYPE FLOAT, " new base pay
+  m_basPay TYPE FLOAT. " monthly base pay
 
 n_basPay = bsc_pay * payMult. "New Base Pay
 m_basPay = n_basPay. "Monthly Base Pay
@@ -152,26 +158,28 @@ m_basPay = n_basPay. "Monthly Base Pay
 " irRate mult
 n_basPay = n_basPay * irRate.
 
-"===============================================================================================
 
-"Allowance Computation =============================================================================="
+"
+" allowance computation
+"
+
 DATA:
   taxable TYPE FLOAT,
   n_taxable TYPE FLOAT.
 
-taxable = ( tax_awc * PayMult ). "Taxable computation
-n_taxable = ( ntax_awc * PayMult ). "Non-Taxable computation
+taxable = ( tax_awc * PayMult ). " taxable
+n_taxable = ( ntax_awc * PayMult ). " non-taxable
 
 " irRate mult
 taxable = taxable * irRate.
 n_taxable = n_taxable * irRate.
 
-"===============================================================================================
 
+"
+" night differential computation
+"
 
-
-"Night Differential Computation =============================================================================="
-DATA: ndiffPay TYPE FLOAT VALUE 0. "Night Differential Pay
+DATA: ndiffPay TYPE FLOAT VALUE 0. " night differential pay
 
 IF NIGHTD = 'X'.
   ndiffPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( ndiffRte / 100 ) * ndHour.
@@ -180,9 +188,12 @@ IF NIGHTD = 'X'.
   ndiffPay = ndiffPay * irRate.
 
 ENDIF.
-"===============================================================================================
 
-"Overtime Computation =============================================================================="
+
+"
+" OT computation
+"
+
 DATA: OTPay TYPE FLOAT VALUE 0. "OT Pay
 
 IF OVRTM = 'X'.
@@ -192,59 +203,68 @@ IF OVRTM = 'X'.
   OTHours = OTHours * irRate.
 
 ENDIF.
-"===============================================================================================
 
 
+"
+" SSS contribution
+"
 
-"SSS Contribution ==============================================================================
 DATA: SSSc TYPE FLOAT.
 
-IF m_basPay < 2250. "Monthly base pay less than 2250
+" monthly base pay check
+IF m_basPay < 2250.
   SSSc = 20.
-ELSEIF m_basPay >= 19750. "Monthly base pay greater than 19750
+ELSEIF m_basPay >= 19750.
   SSSc = 800.
 ELSE.
   SSSc = ROUND( val = ( m_basPay / 500 ) dec = 0 ) * 20.
 ENDIF.
 
-
 " irRate mult
 SSSc = SSSc * irRate.
 
-"===============================================================================================
 
-"GSIS Contribution ==============================================================================
+"
+" GSIS contribution
+"
+
 DATA: GSIS TYPE FLOAT.
 GSIS = bsc_pay * '0.09'.
-"===============================================================================================
 
-"PhilHealth Contributions ==============================================================================
+
+"
+" PhilHealth contributions
+"
+
 DATA: PHc TYPE FLOAT.
 
-IF m_basPay <= 10000. "Monthly base pay less than equal to 10000
+" monthly base pay check
+IF m_basPay <= 10000.
   PHc = '137.50'.
-ELSEIF m_basPay >= 40000. "Monthly base pay greater than equal to 40000
+ELSEIF m_basPay >= 40000.
   PHc = '550'.
 ELSE.
   PHc = ( m_basPay * '0.0275' ) / 2.
 ENDIF.
 
-
 " irRate mult
 PHc = PHc * irRate.
 
-"===============================================================================================
 
-" Pag Ibig Contributions ==============================================================================
+"
+" Pag ibig contributions
+"
+
 DATA: PIc TYPE FLOAT.
-IF m_basPay >= 5000. "Monthly base pay greater than equal to 5000
+
+" monthly base pay check
+IF m_basPay >= 5000.
   PIc = 100.
-ELSEIF m_basPay < 1500. "Monthly base pay less than 1500
+ELSEIF m_basPay < 1500.
   PIc = m_basPay * '0.01'.
 ELSEIF bsc_pay >= 1500.
   PIc = m_basPay * '0.02'.
 ENDIF.
-
 
 " irRate mult
 PIc = PIc * irRate.
@@ -307,7 +327,11 @@ WRITE: / 'Taxable Allowance: ', 90 tax_awc.
 WRITE: / 'Non-Taxable Allowance: ', 90 ntax_awc.
 WRITE: / 'Night Differential Pay: ', 90 ndiffPay.
 WRITE: / 'Overtime Pay: ', 90 OTPay.
+
+ULINE.
 WRITE: / 'Gross Pay: ', 90 gPay.
+ULINE.
+
 WRITE: / 'Withholding Tax: ', 90 whTax.
 IF emp_type = '2'.
   WRITE: / 'GSIS Contribution: ', 90 SSSc.
@@ -316,6 +340,10 @@ ELSE.
 ENDIF.
 WRITE: / 'PhilHealth Contribution: ', 90 PHc.
 WRITE: / 'PAG-IBIG Contribution: ', 90 PIc.
+
+ULINE.
 WRITE: / 'Total Deductions: ', 90 totDeduc.
+ULINE.
+
 WRITE: / 'Net Pay: ', 90 NPay.
 "===============================================================================================
