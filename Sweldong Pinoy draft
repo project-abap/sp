@@ -1,4 +1,3 @@
-"TODO: Night Diff, Gross Pay, GSIS Contrib
 TYPE-POOLS: vrm.
 
 TYPES:
@@ -40,7 +39,7 @@ AT SELECTION-SCREEN OUTPUT.
     PARAMETERS:
       emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Employment Type "
       payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Payroll Period "
-      no_days TYPE P LENGTH 8 DECIMALS 2 OBLIGATORY, " Number of Days "
+      no_days TYPE P LENGTH 8 DECIMALS 2, " Number of Days "
       bsc_pay TYPE P LENGTH 8 DECIMALS 2 OBLIGATORY. " Basic Pay Input "
 
   SELECTION-SCREEN END OF BLOCK B_INPUT.
@@ -127,11 +126,10 @@ AT SELECTION-SCREEN OUTPUT.
   DATA: n_basPay TYPE p DECIMALS 2, "New Base Pay
         m_basPay TYPE p DECIMALS 2. "Monthly Base Pay
 
-  n_basPay = n_basPay * payMult. "New Base Pay
+  n_basPay = bsc_pay * payMult. "New Base Pay
   m_basPay = n_basPay. "Monthly Base Pay
 
   IF mnthly = 'X'.
-    WRITE: / 'Monthly: True'.
     mult = '1'.
     n_basPay = ( n_basPay * mult ) .
 
@@ -146,8 +144,6 @@ AT SELECTION-SCREEN OUTPUT.
   "Monthly Payments End"
 
   "Allowance Computations"
-  "tax_awc TYPE P LENGTH 8 DECIMALS 2, " Taxable Allowance "
-  "ntax_awc
   DATA: taxable TYPE p DECIMALS 2,
        n_taxable TYPE p DECIMALS 2.
 
@@ -243,12 +239,12 @@ AT SELECTION-SCREEN OUTPUT.
   "Witholding tax
   DATA: whTaxTotal TYPE p DECIMALS 2.
 
-  IF emp_type = '4'. "Min Wage"
+  IF emp_type = 4. "Min Wage"
     whTax = 0.
   ELSE.
     whTaxTotal = ( m_basPay - ( SSSc + PHc + PIc ) ) + taxable.
     IF whTaxTotal <= 20833.
-    whTax = 0.
+      whTax = 0.
     ELSEIF whTaxTotal > 20833 AND whTaxTotal <= 33333.
       whTax = ( whTaxTotal - 20833 ) * '.20'.
     ELSEIF whTaxTotal > 33333 AND whTaxTotal <= 66667.
@@ -261,7 +257,6 @@ AT SELECTION-SCREEN OUTPUT.
       whTax = ( ( whTaxTotal - 666667 ) * '.35' ) + '200833.33'.
     ENDIF.
   ENDIF.
-
   IF mnthly = 'X'.
     mult = '1'.
     whTax = whTax * mult.
@@ -282,7 +277,8 @@ AT SELECTION-SCREEN OUTPUT.
   "Total Deductions End"
 
   "Detrimental Computation" "HARMFUL COMPUTATION"
-  gPay = bsc_pay + ntax_awc + ndiffPay + OTPay.
+  gPay = bsc_pay + tax_awc + ntax_awc + ndiffPay + OTPay.
+  NPay = gPay - totDeduc.
 
   "Get Total of All"
   WRITE: / 'Basic Pay: ', 90 bsc_pay.
