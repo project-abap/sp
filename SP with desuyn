@@ -1,0 +1,389 @@
+*&---------------------------------------------------------------------*
+*& Report  YSP189A
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT YSP189A NO STANDARD PAGE HEADING.
+
+TYPE-POOLS: vrm.
+
+TYPES:
+  FLOAT TYPE P DECIMALS 2.
+
+"Dropdowns"
+DATA:
+  vrm_id TYPE vrm_id,
+  vrm_list TYPE vrm_values,
+  vrm_item LIKE LINE OF vrm_list.
+
+"Dropdown Declaration"
+AT SELECTION-SCREEN OUTPUT.
+
+   CLEAR vrm_list.
+  vrm_id = 'emp_type'. "Employment Type"
+  vrm_item-key = '1'.vrm_item-text = 'Private Employee'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = '2'.vrm_item-text = 'Government Employee'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = '3'.vrm_item-text = 'RHQ/ROHQ Employee'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = '4'.vrm_item-text = 'Minimum Wage Employee'. APPEND vrm_item TO vrm_list.
+
+   CALL FUNCTION 'VRM_SET_VALUES' EXPORTING id = vrm_id values = vrm_list.
+
+   CLEAR vrm_list.
+  vrm_id = 'payr_prd'. "Payroll Period"
+  vrm_item-key = '1'.vrm_item-text = 'Daily'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = '2'.vrm_item-text = 'Weekly'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = '3'.vrm_item-text = 'Semi-Monthly'. APPEND vrm_item TO vrm_list.
+  vrm_item-key = '4'.vrm_item-text = 'Monthly'. APPEND vrm_item TO vrm_list.
+
+   CALL FUNCTION 'VRM_SET_VALUES' EXPORTING id = vrm_id values = vrm_list.
+
+  "Program Start dawg"
+  START-OF-SELECTION.
+
+  "Basic Inputs
+  SELECTION-SCREEN BEGIN OF BLOCK B_INPUT WITH FRAME TITLE B_INPUT.
+
+    PARAMETERS:
+      emp_type(22) AS LISTBOX VISIBLE LENGTH 22, " Employment Type "
+      payr_prd(22) AS LISTBOX VISIBLE LENGTH 22, " Payroll Period "
+      no_days TYPE P LENGTH 8 DECIMALS 2, " Number of Days "
+      bsc_pay TYPE P LENGTH 8 DECIMALS 2. " Basic Pay Input "
+
+  SELECTION-SCREEN END OF BLOCK B_INPUT.
+
+  "Basic Allowance Inputs
+  SELECTION-SCREEN BEGIN OF BLOCK B_ALLOW WITH FRAME TITLE B_ALLOW.
+    PARAMETERS:
+      tax_awc TYPE P LENGTH 8 DECIMALS 2, " Taxable Allowance "
+      ntax_awc TYPE P LENGTH 8 DECIMALS 2. " Non - Taxable Allowance "
+  SELECTION-SCREEN END OF BLOCK B_ALLOW.
+
+  "Night Differential
+  SELECTION-SCREEN BEGIN OF BLOCK N_DIFF WITH FRAME TITLE N_DIFF.
+    PARAMETERS:
+      NIGHTD AS CHECKBOX USER-COMMAND ND, "Night Differential CB"
+      ndHour TYPE I, "Night Differential Value
+      ndiffRte TYPE P LENGTH 8 DECIMALS 2. "Night Differential Rate
+  SELECTION-SCREEN END OF BLOCK N_DIFF.
+
+  "Overtime
+  SELECTION-SCREEN BEGIN OF BLOCK O_TIME WITH FRAME TITLE O_TIME.
+    PARAMETERS:
+      OVRTM AS CHECKBOX USER-COMMAND OT, "Overtime CheckBox"
+      OTHours TYPE I, "OT Number of Hours
+      OTRte TYPE P LENGTH 8 DECIMALS 2. "OT Rate
+  SELECTION-SCREEN END OF BLOCK O_TIME.
+
+  "Income Rate"
+  SELECTION-SCREEN BEGIN OF BLOCK INC_RATE WITH FRAME TITLE INC_RATE.
+    PARAMETERS:
+      mnthly RADIOBUTTON GROUP grp DEFAULT 'X', "Monthly
+      s_mnthly RADIOBUTTON GROUP grp, "Semi-Monthly
+      annual RADIOBUTTON GROUP grp.
+  SELECTION-SCREEN END OF BLOCK INC_RATE.
+
+  END-OF-SELECTION.
+
+  "Blocks
+  START-OF-SELECTION.
+
+  INITIALIZATION.
+    B_INPUT = 'Input'.
+    B_ALLOW = 'Allowance'.
+    N_DIFF = 'Night Differential'.
+    O_TIME = 'Overtime'.
+    INC_RATE = 'Rates'.
+
+  END-OF-SELECTION.
+
+  "Pay Multiplier =============================================================================="
+  DATA: PayMult TYPE p DECIMALS 2. "Pay multiplier"
+
+  "Payroll Period"
+  IF payr_prd = '1'. "Daily"
+    PayMult = no_days. "number of days
+
+  ELSEIF payr_prd = '2'. "Weekly"
+    PayMult = '4'. "number of days
+
+  ELSEIF payr_prd = '3'. "Semi-Monthly"
+    PayMult = '2'. "number of days
+
+  ELSEIF payr_prd = '4'. "Monthly"
+    PayMult = '1'. "number of days
+  ENDIF.
+  "===============================================================================================
+
+
+  "Monthly Payment =============================================================================="
+  DATA: n_basPay TYPE p DECIMALS 2, "New Base Pay
+        m_basPay TYPE p DECIMALS 2. "Monthly Base Pay
+
+  n_basPay = bsc_pay * payMult. "New Base Pay
+  m_basPay = n_basPay. "Monthly Base Pay
+
+  IF mnthly = 'X'.
+    n_basPay = n_basPay * 1.
+
+  ELSEIF s_mnthly = 'X'. "Semi Monthly"
+    n_basPay = n_basPay * '0.5'.
+
+  ELSEIF annual = 'X'. "Annual
+    n_basPay = n_basPay * 12.
+  ENDIF.
+  "===============================================================================================
+
+  "Allowance Computation =============================================================================="
+  DATA: taxable TYPE p DECIMALS 2,
+       n_taxable TYPE p DECIMALS 2.
+
+  taxable = ( tax_awc * PayMult ). "Taxable computation
+  n_taxable = ( ntax_awc * PayMult ). "Non-Taxable computation
+
+  IF mnthly = 'X'.
+    taxable = taxable * 1.
+    n_taxable = n_taxable * 1.
+
+  ELSEIF s_mnthly = 'X'. "Semi Monthly"
+    taxable = taxable * '0.5'.
+    n_taxable = n_taxable * '0.5'.
+
+  ELSEIF annual = 'X'. "Annual
+    taxable = taxable * 12.
+    n_taxable = n_taxable * 12.
+  ENDIF.
+  "===============================================================================================
+
+
+  "Night Differential Computation =============================================================================="
+  DATA: ndiffPay TYPE P DECIMALS 2. "Night Differential Pay
+  IF NIGHTD = 'X'.
+     "243.3326844461748 Number of hours per month
+    ndiffPay = ( ( bsc_pay + n_taxable + taxable ) / '243.3326844461748' ) * ( ndiffRte / 100 ) * ndHour.
+
+    IF mnthly = 'X'.
+      ndiffPay = ndiffPay * 1.
+
+    ELSEIF s_mnthly = 'X'. "Semi Monthly"
+      ndiffPay = ndiffPay * '0.5'.
+
+    ELSEIF annual = 'X'. "Annual
+      ndiffPay = ndiffPay * 12.
+    ENDIF.
+
+  ELSE.
+    ndiffPay = 0.
+  ENDIF.
+  "===============================================================================================
+
+  "Overtime Computation =============================================================================="
+  DATA: OTPay TYPE P DECIMALS 2. "OT Pay
+
+  IF OVRTM = 'X'.
+    OTPay = ( ( bsc_pay + n_taxable + taxable ) / '243.3326844461748' ) * ( OTRte / 100 ) * OTHours.
+
+    IF mnthly = 'X'.
+      OTHours = OTHours * 1.
+
+    ELSEIF s_mnthly = 'X'. "Semi Monthly"
+      OTHours = OTHours * '0.5'.
+
+    ELSEIF annual = 'X'. "Annual
+      OTHours = OTHours * 12.
+    ENDIF.
+
+  ELSE.
+    OTPay = 0.
+  ENDIF.
+  "===============================================================================================
+
+
+  "SSS Contribution ==============================================================================
+  DATA: SSSc TYPE P DECIMALS 2.
+
+  IF emp_type = '2'.
+    SSSc = 0.
+  ELSE.
+    IF m_basPay < 2250. "Monthly base pay less than 2250
+      SSSc = 20.
+    ELSEIF m_basPay >= 19750. "Monthly base pay greater than 19750
+      SSSc = 800.
+    ELSE.
+      SSSc = ROUND( val = ( m_basPay / 500 ) dec = 0 ) * 20.
+    ENDIF.
+
+    IF mnthly = 'X'.
+      SSSc = SSSc * 1.
+
+    ELSEIF s_mnthly = 'X'. "Semi Monthly"
+      SSSc = SSSc * '0.5'.
+
+    ELSEIF annual = 'X'. "Annual
+      SSSc = SSSc * 12.
+    ENDIF.
+  ENDIF.
+  "===============================================================================================
+
+  "GSIS Contribution ==============================================================================
+  DATA: GSIS TYPE P DECIMALS 2.
+  GSIS = bsc_pay * '0.09'.
+  "===============================================================================================
+
+  "PhilHealth Contributions ==============================================================================
+  DATA: PHc TYPE P DECIMALS 2.
+
+  IF m_basPay <= 10000. "Monthly base pay less than equal to 10000
+    PHc = '137.50'.
+  ELSEIF m_basPay >= 40000. "Monthly base pay greater than equal to 40000
+    PHc = '550'.
+  ELSE.
+    PHc = ( m_basPay * '0.0275' ) / 2.
+  ENDIF.
+
+  IF mnthly = 'X'.
+    PHc = PHc * 1.
+
+  ELSEIF s_mnthly = 'X'. "Semi Monthly"
+    PHc = PHc * '0.5'.
+
+  ELSEIF annual = 'X'. "Annual
+    PHc = PHc * 12.
+  ENDIF.
+  "===============================================================================================
+
+  " Pag Ibig Contributions ==============================================================================
+  DATA: PIc TYPE P DECIMALS 2.
+  IF m_basPay >= 5000. "Monthly base pay greater than equal to 5000
+    PIc = 100.
+  ELSEIF m_basPay < 1500. "Monthly base pay less than 1500
+    PIc = m_basPay * '0.01'.
+  ELSEIF bsc_pay >= 1500.
+    PIc = m_basPay * '0.02'.
+  ENDIF.
+
+  IF mnthly = 'X'.
+    PIc = PIc * 1.
+
+  ELSEIF s_mnthly = 'X'. "Semi Monthly"
+    PIc = PIc * '0.5'.
+
+  ELSEIF annual = 'X'. "Annual
+    PIc = PIc * 12.
+  ENDIF.
+  "===============================================================================================
+
+  "Witholding tax ==============================================================================
+  DATA:whTax TYPE P DECIMALS 2,
+       whTaxTotal TYPE p DECIMALS 2.
+
+  IF emp_type = 4. "Min Wage"
+    whTax = 0.
+  ELSE.
+    whTaxTotal = ( m_basPay - ( SSSc + PHc + PIc ) ) + taxable.
+    IF whTaxTotal <= 20833.
+      whTax = 0.
+    ELSEIF whTaxTotal > 20833 AND whTaxTotal <= 33333.
+      whTax = ( whTaxTotal - 20833 ) * '.20'.
+    ELSEIF whTaxTotal > 33333 AND whTaxTotal <= 66667.
+      whTax = ( ( whTaxTotal - 33333 ) * '.25' ) + 2500.
+    ELSEIF whTaxTotal > 66667 AND whTaxTotal <= 166667.
+      whTax = ( ( whTaxTotal - 66667 ) * '.30' ) + '10833.33'.
+    ELSEIF whTaxTotal > 166667 AND whTaxTotal <= 666667.
+      whTax = ( ( whTaxTotal - 166667 ) * '.32' ) + '40833.33'.
+    ELSEIF whTaxTotal > 666667.
+      whTax = ( ( whTaxTotal - 666667 ) * '.35' ) + '200833.33'.
+    ENDIF.
+  ENDIF.
+  IF mnthly = 'X'.
+    whTax = whTax * 1.
+
+  ELSEIF s_mnthly = 'X'. "Semi Monthly"
+    whTax = whTax * '0.5'.
+
+  ELSEIF annual = 'X'. "Annual
+    whTax = whTax * 12.
+  ENDIF.
+  "===============================================================================================
+
+  "Total Deductions ==============================================================================
+  DATA: totDeduc TYPE P DECIMALS 2.
+  totDeduc = whTax + SSSc + PHc + PIc.
+  "===============================================================================================
+
+  "Gross Pay ==============================================================================
+  DATA: gPay TYPE P DECIMALS 2.
+  gPay = bsc_pay + tax_awc + ntax_awc + ndiffPay + OTPay.
+  "===============================================================================================
+
+  "Net Pay ==============================================================================
+  DATA: NPay TYPE P DECIMALS 2.
+  NPay = gPay - totDeduc.
+  "===============================================================================================
+
+  "Display All =============================================================================="
+  
+  WRITE: SY-ULINE(150).
+  WRITE: /0 SY-VLINE, 5 'New SSS Contribution Table ',150 SY-VLINE.
+  WRITE: /0 SY-VLINE, 150 SY-VLINE.
+  WRITE: /0 SY-VLINE, 5 'We''ve updated SSS contributions based on Republic Act No. 11199 (The Social Security Act of 2018). Learn more here.', 150 SY-VLINE.
+  WRITE: /0 SY-VLINE, 150 SY-VLINE.
+  WRITE: SY-ULINE(150).
+  
+  SKIP.SKIP.
+  
+  WRITE: 'INPUT', 55 'RESULTS',
+        /10 'Employment Type: '.
+  IF emp_type = '1'.
+    WRITE: 'Private Employee'.
+  ELSEIF emp_type = '2'.
+    WRITE: 'Government Employee'.
+  ELSEIF emp_type = '3'.
+    WRITE: 'RHQ/ROHQ Employee'.
+  ELSEIF emp_type ='4'.
+    WRITE: 'Minimum Wage Employee'.
+  ENDIF.
+  
+  IF mnthly = 'X'.
+    WRITE: 60 'Monthly'.
+
+  ELSEIF s_mnthly = 'X'. "Semi Monthly"
+    WRITE: 60 'Semi-Monthly'.
+
+  ELSEIF annual = 'X'. "Annual
+    WRITE: 60 'Annual'.
+  ENDIF.
+  
+  WRITE: /10 'Payroll Period: '.
+  
+  IF payr_prd = '1'.
+    WRITE: 'Daily'.
+  ELSEIF payr_prd = '2'.
+    WRITE: 'Weekly'.
+  ELSEIF payr_prd = '3'.
+    WRITE: 'Semi-Monthly'.
+  ELSEIF payr_prd ='4'.
+    WRITE: 'Monthly'.
+  ENDIF.
+  
+  WRITE: 62 'Basic Pay: ', 85 bsc_pay.
+  WRITE: /10 'Basic Pay: ', bsc_pay, 62 'Taxable Allowance: ', 85 tax_awc.
+  WRITE: /62 'Non-Taxable Allowance: ', 85 ntax_awc,  
+         /62 'Night Differential Pay: ', 85 ndiffPay,
+         /62 'Overtime Pay: ', 85 OTPay,
+         /62 'Gross Pay: ', 85 gPay,
+         /0 'Allowance', 62 'Withholding Tax: ', 85 whTax.
+  WRITE: /0 SY-ULINE(85).
+  
+  
+  IF emp_type = '2'.
+    WRITE: / 'GSIS Contribution: ', 90 SSSc.
+  ELSE.
+    WRITE: / 'SSS Contribution: ', 90 SSSc.
+  ENDIF.
+  WRITE: / 'PhilHealth Contribution: ', 90 PHc.
+  WRITE: / 'PAG-IBIG Contribution: ', 90 PIc.
+  WRITE: / 'Total Deductions: ', 90 totDeduc.
+  WRITE: / 'Net Pay: ', 90 NPay.
+  "===============================================================================================
