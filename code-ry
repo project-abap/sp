@@ -55,7 +55,7 @@ SELECTION-SCREEN BEGIN OF BLOCK S_INPUT WITH FRAME TITLE S_INPUT.
 
   PARAMETERS:
     emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY DEFAULT '1', " employment type
-    payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY DEFAULT '1', " payroll period
+    payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY DEFAULT '4', " payroll period
     no_days TYPE FLOAT, " number of days
     bsc_pay TYPE FLOAT. " basic pay
 
@@ -149,11 +149,11 @@ ENDCASE.
 "
 
 DATA:
-  n_basPay TYPE FLOAT, " new base pay
-  m_basPay TYPE FLOAT. " monthly base pay
+  n_basPay TYPE FLOAT, " new basic pay
+  m_basPay TYPE FLOAT. " monthly basic pay
 
-n_basPay = bsc_pay * payMult. "New Base Pay
-m_basPay = n_basPay. "Monthly Base Pay
+n_basPay = bsc_pay * payMult. " new basic pay
+m_basPay = n_basPay. " monthly basic pay
 
 " irRate mult
 n_basPay = n_basPay * irRate.
@@ -179,10 +179,12 @@ n_taxable = n_taxable * irRate.
 " night differential computation
 "
 
-DATA: ndiffPay TYPE FLOAT VALUE 0. " night differential pay
+DATA:
+  MO_HRS TYPE FLOAT VALUE '243.3326844461748', " number of hours per month
+  ndiffPay TYPE FLOAT VALUE 0. " night differential pay
 
 IF NIGHTD = 'X'.
-  ndiffPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( ndiffRte / 100 ) * ndHour.
+  ndiffPay = ( ( bsc_pay + n_taxable + taxable ) / MO_HRS ) * ( ndiffRte / 100 ) * ndHour.
 
   " irRate mult
   ndiffPay = ndiffPay * irRate.
@@ -194,10 +196,10 @@ ENDIF.
 " OT computation
 "
 
-DATA: OTPay TYPE FLOAT VALUE 0. "OT Pay
+DATA: OTPay TYPE FLOAT VALUE 0.
 
 IF OVRTM = 'X'.
-  OTPay = ( ( bsc_pay + n_taxable + taxable ) / '243.33' ) * ( OTRte / 100 ) * OTHours.
+  OTPay = ( ( bsc_pay + n_taxable + taxable ) / MO_HRS ) * ( OTRte / 100 ) * OTHours.
 
   " irRate mult
   OTHours = OTHours * irRate.
@@ -211,13 +213,16 @@ ENDIF.
 
 DATA: SSSc TYPE FLOAT.
 
-" monthly base pay check
+WRITE: m_basPay.
+
+" monthly basic pay check
 IF m_basPay < 2250.
-  SSSc = 20.
+  SSSc = 20. """ 80 in site
 ELSEIF m_basPay >= 19750.
   SSSc = 800.
 ELSE.
   SSSc = ROUND( val = ( m_basPay / 500 ) dec = 0 ) * 20.
+
 ENDIF.
 
 " irRate mult
@@ -238,7 +243,7 @@ GSIS = bsc_pay * '0.09'.
 
 DATA: PHc TYPE FLOAT.
 
-" monthly base pay check
+" monthly basic pay check
 IF m_basPay <= 10000.
   PHc = '137.50'.
 ELSEIF m_basPay >= 40000.
@@ -257,7 +262,7 @@ PHc = PHc * irRate.
 
 DATA: PIc TYPE FLOAT.
 
-" monthly base pay check
+" monthly basic pay check
 IF m_basPay >= 5000.
   PIc = 100.
 ELSEIF m_basPay < 1500.
@@ -269,14 +274,16 @@ ENDIF.
 " irRate mult
 PIc = PIc * irRate.
 
-"===============================================================================================
 
-"Witholding tax ==============================================================================
+"
+" withholding tax
+"
+
 DATA:
   whTax TYPE FLOAT,
   whTaxTotal TYPE FLOAT.
 
-IF emp_type = 4. "Min Wage"
+IF emp_type = 4.
   whTax = 0.
 ELSE.
   whTaxTotal = ( m_basPay - ( SSSc + PHc + PIc ) ) + taxable.
@@ -322,32 +329,39 @@ NPay = gPay - totDeduc.
 " show actual output here
 "
 
-WRITE: / 'Results'.
-ULINE.
+DATA: ulLen TYPE I VALUE 16.
+ulLen = ulLen + 75.
+
+WRITE:
+  / 'Results',
+  / SY-ULINE(ulLen).
 
 SKIP 1.
 
-WRITE: 'Basic Pay: ', 90 bsc_pay.
-WRITE: / 'Taxable Allowance: ', 90 tax_awc.
-WRITE: / 'Non-Taxable Allowance: ', 90 ntax_awc.
-WRITE: / 'Night Differential Pay: ', 90 ndiffPay.
-WRITE: / 'Overtime Pay: ', 90 OTPay.
+WRITE:
+  'Basic Pay: ', 75 bsc_pay,
+  / 'Taxable Allowance: ', 75 tax_awc,
+  / 'Non-Taxable Allowance: ', 75 ntax_awc,
+  / 'Night Differential Pay: ', 75 ndiffPay,
+  / 'Overtime Pay: ', 75 OTPay.
 
-ULINE.
-WRITE: / 'Gross Pay: ', 90 gPay.
-ULINE.
+WRITE: / SY-ULINE(ulLen).
+WRITE: / 'Gross Pay: ', 75 gPay.
+WRITE: / SY-ULINE(ulLen).
 
-WRITE: / 'Withholding Tax: ', 90 whTax.
+WRITE: / 'Withholding Tax: ', 75 whTax.
+
 IF emp_type = '2'.
-  WRITE: / 'GSIS Contribution: ', 90 SSSc.
+  WRITE: / 'GSIS Contribution: ', 75 SSSc.
 ELSE.
-  WRITE: / 'SSS Contribution: ', 90 SSSc.
+  WRITE: / 'SSS Contribution: ', 75 SSSc.
 ENDIF.
-WRITE: / 'PhilHealth Contribution: ', 90 PHc.
-WRITE: / 'PAG-IBIG Contribution: ', 90 PIc.
 
-ULINE.
-WRITE: / 'Total Deductions: ', 90 totDeduc.
-ULINE.
+WRITE:
+  / 'PhilHealth Contribution: ', 75 PHc,
+  / 'PAG-IBIG Contribution: ', 75 PIc.
 
-WRITE: / 'Net Pay: ', 90 NPay.
+WRITE: / SY-ULINE(ulLen).
+WRITE: / 'Total Deductions: ', 75 totDeduc.
+WRITE: / SY-ULINE(ulLen).
+WRITE: / 'Net Pay: ', 75 NPay.
