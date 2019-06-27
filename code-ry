@@ -54,8 +54,8 @@ START-OF-SELECTION.
 SELECTION-SCREEN BEGIN OF BLOCK S_INPUT WITH FRAME TITLE S_INPUT.
 
   PARAMETERS:
-    emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " employment type
-    payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " payroll period
+    emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY DEFAULT '1', " employment type
+    payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY DEFAULT '1', " payroll period
     no_days TYPE FLOAT, " number of days
     bsc_pay TYPE FLOAT. " basic pay
 
@@ -299,24 +299,29 @@ ENDIF.
 " irRate mult
 whTax = whTax * irRate.
 
-"===============================================================================================
+"
+"
+"! computations for
+"
+" total deductions
+" gross pay
+" net pay
+"
 
-"Total Deductions ==============================================================================
-DATA: totDeduc TYPE FLOAT.
+DATA:
+  totDeduc TYPE FLOAT,
+  gPay TYPE FLOAT,
+  NPay TYPE FLOAT.
+
 totDeduc = whTax + SSSc + PHc + PIc.
-"===============================================================================================
-
-"Gross Pay ==============================================================================
-DATA: gPay TYPE FLOAT.
 gPay = bsc_pay + tax_awc + ntax_awc + ndiffPay + OTPay.
-"===============================================================================================
-
-"Net Pay ==============================================================================
-DATA: NPay TYPE FLOAT.
 NPay = gPay - totDeduc.
-"===============================================================================================
 
-"Display All =============================================================================="
+
+"
+" show actual output here
+"
+
 WRITE: / 'Results'.
 ULINE.
 
@@ -346,4 +351,3 @@ WRITE: / 'Total Deductions: ', 90 totDeduc.
 ULINE.
 
 WRITE: / 'Net Pay: ', 90 NPay.
-"===============================================================================================
