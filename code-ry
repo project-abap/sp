@@ -158,6 +158,8 @@ m_basPay = n_basPay. " monthly basic pay
 " irRate mult
 n_basPay = n_basPay * irRate.
 
+bsc_pay = n_basPay.
+
 
 "
 " allowance computation
@@ -174,6 +176,8 @@ n_taxable = ( ntax_awc * PayMult ). " non-taxable
 taxable = taxable * irRate.
 n_taxable = n_taxable * irRate.
 
+tax_awc = taxable.
+ntax_awc = n_taxable.
 
 "
 " night differential computation
