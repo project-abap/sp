@@ -213,8 +213,6 @@ ENDIF.
 
 DATA: SSSc TYPE FLOAT.
 
-WRITE: m_basPay.
-
 " monthly basic pay check
 IF m_basPay < 2250.
   SSSc = 20. """ 80 in site
