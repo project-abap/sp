@@ -46,10 +46,10 @@ AT SELECTION-SCREEN OUTPUT.
   SELECTION-SCREEN BEGIN OF BLOCK B_INPUT WITH FRAME TITLE B_INPUT.
 
     PARAMETERS:
-      emp_type(22) AS LISTBOX VISIBLE LENGTH 22, " Employment Type "
-      payr_prd(22) AS LISTBOX VISIBLE LENGTH 22, " Payroll Period "
+      emp_type(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Employment Type "
+      payr_prd(22) AS LISTBOX VISIBLE LENGTH 22 OBLIGATORY, " Payroll Period "
       no_days TYPE P LENGTH 8 DECIMALS 2, " Number of Days "
-      bsc_pay TYPE P LENGTH 8 DECIMALS 2. " Basic Pay Input "
+      bsc_pay TYPE P LENGTH 8 DECIMALS 2 OBLIGATORY. " Basic Pay Input "
 
   SELECTION-SCREEN END OF BLOCK B_INPUT.
 
@@ -124,6 +124,8 @@ AT SELECTION-SCREEN OUTPUT.
   n_basPay = bsc_pay * payMult. "New Base Pay
   m_basPay = n_basPay. "Monthly Base Pay
 
+  n_basPay = n_basPay * PayMult.
+
   IF mnthly = 'X'.
     n_basPay = n_basPay * 1.
 
@@ -133,6 +135,8 @@ AT SELECTION-SCREEN OUTPUT.
   ELSEIF annual = 'X'. "Annual
     n_basPay = n_basPay * 12.
   ENDIF.
+
+  bsc_pay = n_basPay.
   "===============================================================================================
 
   "Allowance Computation =============================================================================="
@@ -141,6 +145,9 @@ AT SELECTION-SCREEN OUTPUT.
 
   taxable = ( tax_awc * PayMult ). "Taxable computation
   n_taxable = ( ntax_awc * PayMult ). "Non-Taxable computation
+
+  taxable = taxable * PayMult.
+  n_taxable = n_taxable * PayMult.
 
   IF mnthly = 'X'.
     taxable = taxable * 1.
@@ -154,6 +161,9 @@ AT SELECTION-SCREEN OUTPUT.
     taxable = taxable * 12.
     n_taxable = n_taxable * 12.
   ENDIF.
+
+  tax_awc = taxable.
+  ntax_awc = n_taxable.
   "===============================================================================================
 
 
@@ -323,67 +333,23 @@ AT SELECTION-SCREEN OUTPUT.
   "===============================================================================================
 
   "Display All =============================================================================="
-  
-  WRITE: SY-ULINE(150).
-  WRITE: /0 SY-VLINE, 5 'New SSS Contribution Table ',150 SY-VLINE.
-  WRITE: /0 SY-VLINE, 150 SY-VLINE.
-  WRITE: /0 SY-VLINE, 5 'We''ve updated SSS contributions based on Republic Act No. 11199 (The Social Security Act of 2018). Learn more here.', 150 SY-VLINE.
-  WRITE: /0 SY-VLINE, 150 SY-VLINE.
-  WRITE: SY-ULINE(150).
-  
-  SKIP.SKIP.
-  
-  WRITE: 'INPUT', 55 'RESULTS',
-        /10 'Employment Type: '.
-  IF emp_type = '1'.
-    WRITE: 'Private Employee'.
-  ELSEIF emp_type = '2'.
-    WRITE: 'Government Employee'.
-  ELSEIF emp_type = '3'.
-    WRITE: 'RHQ/ROHQ Employee'.
-  ELSEIF emp_type ='4'.
-    WRITE: 'Minimum Wage Employee'.
-  ENDIF.
-  
-  IF mnthly = 'X'.
-    WRITE: 60 'Monthly'.
 
-  ELSEIF s_mnthly = 'X'. "Semi Monthly"
-    WRITE: 60 'Semi-Monthly'.
+  WRITE: / 'Basic Pay: ',90 bsc_pay,
+         / 'Taxable Allowance: ',90 tax_awc.
+  WRITE: / 'Non-Taxable Allowance: ',90 ntax_awc,
+         / 'Night Differential Pay: ',90 ndiffPay,
+         / 'Overtime Pay: ',90 OTPay,
+         / 'Gross Pay: ',90 gPay,
+         / 'Withholding Tax: ',90 whTax.
 
-  ELSEIF annual = 'X'. "Annual
-    WRITE: 60 'Annual'.
-  ENDIF.
-  
-  WRITE: /10 'Payroll Period: '.
-  
-  IF payr_prd = '1'.
-    WRITE: 'Daily'.
-  ELSEIF payr_prd = '2'.
-    WRITE: 'Weekly'.
-  ELSEIF payr_prd = '3'.
-    WRITE: 'Semi-Monthly'.
-  ELSEIF payr_prd ='4'.
-    WRITE: 'Monthly'.
-  ENDIF.
-  
-  WRITE: 62 'Basic Pay: ', 85 bsc_pay.
-  WRITE: /10 'Basic Pay: ', bsc_pay, 62 'Taxable Allowance: ', 85 tax_awc.
-  WRITE: /62 'Non-Taxable Allowance: ', 85 ntax_awc,  
-         /62 'Night Differential Pay: ', 85 ndiffPay,
-         /62 'Overtime Pay: ', 85 OTPay,
-         /62 'Gross Pay: ', 85 gPay,
-         /0 'Allowance', 62 'Withholding Tax: ', 85 whTax.
-  WRITE: /0 SY-ULINE(85).
-  
-  
+
   IF emp_type = '2'.
-    WRITE: / 'GSIS Contribution: ', 90 SSSc.
+    WRITE: / 'GSIS Contribution: ',90 SSSc.
   ELSE.
-    WRITE: / 'SSS Contribution: ', 90 SSSc.
+    WRITE: / 'SSS Contribution: ',90 SSSc.
   ENDIF.
-  WRITE: / 'PhilHealth Contribution: ', 90 PHc.
-  WRITE: / 'PAG-IBIG Contribution: ', 90 PIc.
-  WRITE: / 'Total Deductions: ', 90 totDeduc.
-  WRITE: / 'Net Pay: ', 90 NPay.
+  WRITE: / 'PhilHealth Contribution: ',90 PHc.
+  WRITE: / 'PAG-IBIG Contribution: ',90 PIc.
+  WRITE: / 'Total Deductions: ',90 totDeduc.
+  WRITE: / 'Net Pay: ',90 NPay.
   "===============================================================================================
