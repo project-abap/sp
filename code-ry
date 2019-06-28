@@ -14,13 +14,13 @@ TYPE-POOLS: vrm.
 " commons
 TYPES: FLOAT TYPE P DECIMALS 2.
 
-"Dropdowns"
+" dropdown stuff
 DATA:
   vrm_id TYPE vrm_id,
   vrm_list TYPE vrm_values,
   vrm_item LIKE LINE OF vrm_list.
 
-"Dropdown Declaration"
+" dropdown declaration
 AT SELECTION-SCREEN OUTPUT.
 
   " employment type
